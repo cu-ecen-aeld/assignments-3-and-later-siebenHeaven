@@ -1,4 +1,12 @@
 #include "systemcalls.h"
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -9,14 +17,43 @@
 */
 bool do_system(const char *cmd)
 {
+    if (0 != system(cmd)) {
+        return false;
+    }
 
-/*
- * TODO  add your code here
- *  Call the system() function with the command set in the cmd
- *   and return a boolean true if the system() call completed with success
- *   or false() if it returned a failure
-*/
+    return true;
+}
 
+static bool helper(char* command[], const char* outputfile) {
+    fflush(stdout);
+    pid_t pid = fork();
+    int fd;
+
+    if (outputfile) {
+        fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+        if (fd < 0) return false;
+    }
+    if (-1 == pid) {
+        return false;
+    } else if (0 == pid) {
+        if (outputfile) {
+            if (0 > dup2(fd, 1)) { exit(EXIT_FAILURE); }
+            close(fd);
+        }
+        // child process
+        execv(command[0], command);
+        printf("Exiting child with status %d\n", EXIT_FAILURE);
+        exit(EXIT_FAILURE);
+    } else {
+        // parent process
+        close(fd);
+        int wstatus = -1;
+        if ((-1 == waitpid(pid, &wstatus, WUNTRACED | WCONTINUED))
+            || (!WIFEXITED(wstatus))
+            || (WEXITSTATUS(wstatus))) {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -49,15 +86,9 @@ bool do_exec(int count, ...)
     // and may be removed
     command[count] = command[count];
 
-/*
- * TODO:
- *   Execute a system command by calling fork, execv(),
- *   and wait instead of system (see LSP page 161).
- *   Use the command[0] as the full path to the command to execute
- *   (first argument to execv), and use the remaining arguments
- *   as second argument to the execv() command.
- *
-*/
+    if (!helper(command, NULL)) {
+        return false;
+    }
 
     va_end(args);
 
@@ -84,14 +115,9 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     // and may be removed
     command[count] = command[count];
 
-
-/*
- * TODO
- *   Call execv, but first using https://stackoverflow.com/a/13784315/1446624 as a refernce,
- *   redirect standard out to a file specified by outputfile.
- *   The rest of the behaviour is same as do_exec()
- *
-*/
+    if (!helper(command, outputfile)) {
+        return false;
+    }
 
     va_end(args);
 
