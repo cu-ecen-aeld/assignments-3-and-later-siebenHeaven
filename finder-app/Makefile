@@ -1,6 +1,9 @@
 CC=$(CROSS_COMPILE)gcc
 
-.PHONY: writer
+.PHONY: all
+
+all: writer
+	@echo "Building all"
 
 writer: writer.o
 	$(CC) -o $@ $(LDFLAGS) $^ $(LIBS)
