@@ -1,0 +1,14 @@
+[
+    {
+        "arguments": [
+            "gcc",
+            "-c",
+            "-I./src",
+            "-o",
+            "build/./src/aesdsocket.c.o",
+            "src/aesdsocket.c"
+        ],
+        "directory": "/home/anupm/coursera/linux-system-programming/assignment-1-siebenHeaven/server",
+        "file": "src/aesdsocket.c"
+    }
+]
